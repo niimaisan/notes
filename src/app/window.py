@@ -1,8 +1,12 @@
 from PySide6.QtWidgets import (
-    QWidget, QMainWindow, QListWidget, QTextEdit, QHBoxLayout, QVBoxLayout, QPushButton, QMessageBox, QInputDialog
+    QWidget, QMainWindow, QListWidget, QTextEdit,
+    QHBoxLayout, QVBoxLayout, QPushButton, QMessageBox,
+    QInputDialog, QTextBrowser, QSplitter
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from .utils.storage import load_pages, save_pages
+
+import markdown
 
 
 class MainWindow(QMainWindow):
@@ -17,6 +21,7 @@ class MainWindow(QMainWindow):
         # Widgets
         self.sidebar = QListWidget()
         self.editor = QTextEdit()
+        self.preview = QTextBrowser()
         self.new_button = QPushButton("Nueva página")
         self.save_button = QPushButton("Guardar página")
 
@@ -31,12 +36,19 @@ class MainWindow(QMainWindow):
         sidebar_widget = QWidget()
         sidebar_widget.setLayout(sidebar_layout)
 
+        # editor + preview en splitter
+        self.editor_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.editor_splitter.addWidget(self.editor)
+        self.editor_splitter.addWidget(self.preview)
+        self.editor_splitter.setStretchFactor(0, 3)
+        self.editor_splitter.setStretchFactor(1, 2)
+
         # Layout principal
         main_layout = QHBoxLayout()
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
         main_layout.addWidget(sidebar_widget, 1)
-        main_layout.addWidget(self.editor, 3)
+        main_layout.addWidget(self.editor_splitter, 3)
 
         container = QWidget()
         container.setLayout(main_layout)
@@ -46,12 +58,19 @@ class MainWindow(QMainWindow):
         self.save_button.clicked.connect(self.save_current_page)
         self.sidebar.itemClicked.connect(self.load_selected_page)
 
+        # evitar renderizar demasiado seguido
+        self.preview_timer = QTimer()
+        self.preview_timer.setSingleShot(True)
+        self.preview_timer.timeout.connect(self.render_preview)
+
+        self.editor.textChanged.connect(self.update_preview)
+
         self.refresh_sidebar()
 
     def refresh_sidebar(self):
         self.sidebar.clear()
         for title in self.pages.keys():
-            self.sidebar.addITem(title)
+            self.sidebar.addItem(title)
 
     def new_page(self):
         title, ok = QInputDialog.getText(self, "Nueva página", "Título de la página:")
@@ -71,3 +90,12 @@ class MainWindow(QMainWindow):
     def load_selected_page(self, item):
         self.current_page = item.text()
         self.editor.setPlainText(self.pages.get(self.current_page, ""))
+
+    def update_preview(self):
+        self.preview_timer.start(200)
+
+
+    def render_preview(self):
+        text = self.editor.toPlainText()
+        html = markdown.markdown(text)
+        self.preview.setHtml(html)

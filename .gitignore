@@ -5,3 +5,4 @@ venv/
 *.pyd
 *.sqlite
 *.log
+data.json
