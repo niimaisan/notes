@@ -1,4 +1,7 @@
 __pycache__/
 venv/
-db/notes.json
-*.py[code]
+*.pyc
+*.pyo
+*.pyd
+*.sqlite
+*.log
