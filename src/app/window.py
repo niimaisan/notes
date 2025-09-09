@@ -23,14 +23,14 @@ class MainWindow(QMainWindow):
         self.editor = QTextEdit()
         self.preview = QTextBrowser()
         self.new_button = QPushButton("Nueva página")
-        self.save_button = QPushButton("Guardar página")
+        self.delete_button = QPushButton("Eliminar página")
 
         # Layout sidebar
         sidebar_layout = QVBoxLayout()
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(5)
         sidebar_layout.addWidget(self.new_button)
-        sidebar_layout.addWidget(self.save_button)
+        sidebar_layout.addWidget(self.delete_button)
         sidebar_layout.addWidget(self.sidebar, 1)
         sidebar_layout.addStretch(0)
         sidebar_widget = QWidget()
@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
 
         self.new_button.clicked.connect(self.new_page)
-        self.save_button.clicked.connect(self.save_current_page)
+        self.delete_button.clicked.connect(self.delete_page)
         self.sidebar.itemClicked.connect(self.load_selected_page)
 
         # evitar renderizar demasiado seguido
@@ -81,11 +81,26 @@ class MainWindow(QMainWindow):
             self.pages[title] = ""
             self.refresh_sidebar()
 
-    def save_current_page(self):
-        if self.current_page:
-            self.pages[self.current_page] = self.editor.toPlainText()
+    def delete_page(self):
+        if not self.current_page:
+            QMessageBox.warning(self, "Error", "No hay ninguna página seleccionada")
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Eliminar página",
+            f"¿Seguro que dese eliminar la página '{self.current_page}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            del self.pages[self.current_page]
             save_pages(self.pages)
-            QMessageBox.information(self, "Guardado", f"Página '{self.current_page}' guardada correctamente.")
+            self.current_page = None
+            self.editor.clear()
+            self.preview.clear()
+            self.refresh_sidebar()
+            QMessageBox.information(self, "Eliminada", "La página ha sido eliminada")
 
     def load_selected_page(self, item):
         self.current_page = item.text()
