@@ -63,7 +63,14 @@ class MainWindow(QMainWindow):
         self.preview_timer.setSingleShot(True)
         self.preview_timer.timeout.connect(self.render_preview)
 
+        # autoguardado con retardo
+        self.save_timer = QTimer()
+        self.save_timer.setSingleShot(True)
+        self.save_timer.timeout.connect(self.autosave)
+
+        # conectar editor
         self.editor.textChanged.connect(self.update_preview)
+        self.editor.textChanged.connect(self.schedule_autosave)
 
         self.refresh_sidebar()
 
@@ -114,3 +121,12 @@ class MainWindow(QMainWindow):
         text = self.editor.toPlainText()
         html = markdown.markdown(text)
         self.preview.setHtml(html)
+
+    def schedule_autosave(self):
+        if self.current_page:
+            self.save_timer.start(1000)
+
+    def autosave(self):
+        if self.current_page:
+            self.pages[self.current_page] = self.editor.toPlainText()
+            save_pages(self.pages)
